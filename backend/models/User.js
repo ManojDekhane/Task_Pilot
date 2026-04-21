@@ -3,7 +3,11 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   chatId: Number,
   name: String,
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  pendingTask: {
+    text: String,
+    createdAt: Date
+  }
 });
 
 module.exports = mongoose.model("User", userSchema);

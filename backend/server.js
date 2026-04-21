@@ -9,6 +9,7 @@ const User = require("./models/User");
 const Goal = require("./models/Goal");
 const generateReply = require("./services/gemini");
 
+
 const app = express();
 app.use(cors());
 app.use(express.json());
