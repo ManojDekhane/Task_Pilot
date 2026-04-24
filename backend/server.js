@@ -8,7 +8,7 @@ const cors = require("cors");
 const User = require("./models/User");
 const Goal = require("./models/Goal");
 const generateReply = require("./services/gemini");
-
+const classifyMessage = require("./utils/classifyMessage");
 
 const app = express();
 app.use(cors());
@@ -40,24 +40,39 @@ bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  if (!text || text === "/start") return;
+  if (!text || text.startsWith("/")) return;
 
   try {
-    // Save goal
-    await Goal.create({
-      chatId,
-      goal: text,
-      remindTime: getNextMinute(),
-      completed: false
-    });
+    // 1. Determine what the user wants
+    const classification = await classifyMessage(text);
+    
+    // 2. Handle based on type
+    if (classification.type === "task" && classification.confidence > 0.8) {
+      // It's a task! Save it.
+      await Goal.create({
+        chatId,
+        goal: text,
+        remindTime: getNextMinute(), // You should eventually parse real time here
+        completed: false
+      });
+      
+      const reply = await generateReply(text);
+      bot.sendMessage(chatId, `✅ Tracking this: "${text}"\n\n${reply}`);
 
-    // AI reply
-    const reply = await generateReply(text);
-    bot.sendMessage(chatId, reply);
+    } else if (classification.type === "excuse") {
+      // Don't save as a goal, just let Gemini "roast" or motivate them
+      const reply = await generateReply(text);
+      bot.sendMessage(chatId, reply);
+
+    } else {
+      // Just normal chat
+      const reply = await generateReply(text);
+      bot.sendMessage(chatId, reply);
+    }
 
   } catch (err) {
     console.error(err);
-    bot.sendMessage(chatId, "⚠️ Something went wrong.");
+    bot.sendMessage(chatId, "⚠️ I tripped over my own wires. Try again?");
   }
 });
 
