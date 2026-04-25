@@ -33,7 +33,8 @@ Now generate a response:
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "meta-llama/llama-4-scout-17b-16e-instruct", // ✅ your chosen model
+        // model: "meta-llama/llama-4-scout-17b-16e-instruct", // ✅ your chosen model
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "user",

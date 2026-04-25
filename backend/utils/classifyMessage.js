@@ -3,6 +3,9 @@ const axios = require("axios");
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 async function classifyMessage(text) {
+  const now = new Date();
+  const currentTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit'});
+
   try {
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
@@ -13,24 +16,26 @@ async function classifyMessage(text) {
           {
             role: "user",
             content: `
-Classify the user's message into one of these:
-- "task": User explicitly mentions something they WANT to do or BE REMINDED of.
-- "chat": Greeting, asking how you are, or random talk.
-- "excuse": User explaining why they DIDN'T do a task.
+Analyze: "${text}"
+Current Time (24h format): ${currentTime}
+Your goal is to decide if the user is actually setting a NEW task or just chatting/venting.
 
-Examples:
-"Remind me to study math at 5" -> task
-"I'm feeling really lazy today" -> excuse
-"What's the weather like?" -> chat
-"I will finish the report by tonight" -> task
+Categories:
+1. "task": Only if they say they WILL do something (e.g., "I will study", "Remind me to fix code"). 
+2. "chat": Greetings, insults, random words ("hush", "damn", "jojo", "u r the reason").
+3. "excuse": Reasons for not working ("I'm tired", "going to sleep").
+Rules:
+1. "I am going to sleep", "I'm tired", "taking rest" = "excuse".
+2. If "task", calculate minutes_from_now. 
+   Example: If Current Time is 11:30 and task is "at 14:00", minutes_from_now is 150.
+3. If no time is mentioned, return 60.
+4. If time mentioned is in the past, assume it's for the next day (+1440 mins).
 
-Message: "${text}"
-Reply ONLY in JSON: {"type": "type", "confidence": 0.0}
+Return ONLY JSON: {"type": "task", "confidence": 0.9, "minutes_from_now": 150}
 `
           },
-
         ],
-        response_format: {type: "json_object"},
+        response_format: { type: "json_object" },
         temperature: 0,
         max_tokens: 50,
       },
@@ -48,7 +53,7 @@ Reply ONLY in JSON: {"type": "type", "confidence": 0.0}
     if (err.response?.status === 400) {
       console.error("Groq 400 Error: Check if model ID is correct or params are valid.");
     }
-    return { type: "chat", confidence: 0.5 };
+    return { type: "chat", confidence: 0.5, minutes_from_now: 0 };
   }
 }
 
