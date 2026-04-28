@@ -5,6 +5,6 @@ const goalSchema = new mongoose.Schema({
   goal: String,
   remindTime: String,
   completed: { type: Boolean, default: false }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Goal", goalSchema);
